@@ -1,13 +1,16 @@
+import asyncio
 import os
 from typing import List, Optional
 
 import serial
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from serial.tools import list_ports
+
+from mcp_client import get_mcp_client, get_event_log, clear_event_log
 
 AVAILABLE_ACTIONS = {
     "OPEN_DOOR",
@@ -31,6 +34,42 @@ class CommandRequest(BaseModel):
 class MCPInvokeRequest(BaseModel):
     name: str = Field(..., description="Action name matching the Arduino command set")
     args: Optional[dict] = Field(default=None, description="Unused, reserved for future")
+
+
+class MCPToolRequest(BaseModel):
+    tool: str = Field(..., description="Tool name: control_door, control_fans, control_leds")
+    action: str = Field(..., description="Action: OPEN/CLOSE for door, ON/OFF for fans/leds")
+
+
+# ============================================================
+# WebSocket Manager pour le live log
+# ============================================================
+
+
+class WebSocketManager:
+    """Gère les connexions WebSocket pour le live log."""
+
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: dict):
+        """Envoie un message à tous les clients connectés."""
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(message)
+            except Exception:
+                pass
+
+
+ws_manager = WebSocketManager()
 
 
 class SerialManager:
@@ -94,6 +133,105 @@ class SerialManager:
 
 serial_manager = SerialManager()
 
+
+# ============================================================
+# Fonctions importables pour le LLM (contrôle direct Python)
+# ============================================================
+
+
+def control_leds(state: str) -> str:
+    """
+    Contrôle les LEDs.
+
+    Args:
+        state: 'ON' pour allumer, 'OFF' pour éteindre
+
+    Returns:
+        Message de confirmation
+
+    Raises:
+        ValueError: Si une erreur survient (connexion, envoi, etc.)
+    """
+    action = "TURN_ON_LIGHTS" if state.upper() == "ON" else "TURN_OFF_LIGHTS"
+    try:
+        serial_manager.send(action)
+    except HTTPException as e:
+        raise ValueError(e.detail) from e
+    return f"LEDs {state.upper()}"
+
+
+def control_door(action: str) -> str:
+    """
+    Contrôle la porte.
+
+    Args:
+        action: 'OPEN' pour ouvrir, 'CLOSE' pour fermer
+
+    Returns:
+        Message de confirmation
+
+    Raises:
+        ValueError: Si une erreur survient (connexion, envoi, etc.)
+    """
+    cmd = "OPEN_DOOR" if action.upper() == "OPEN" else "CLOSE_DOOR"
+    try:
+        serial_manager.send(cmd)
+    except HTTPException as e:
+        raise ValueError(e.detail) from e
+    return f"Door {action.upper()}"
+
+
+def control_fan(state: str) -> str:
+    """
+    Contrôle le ventilateur.
+
+    Args:
+        state: 'ON' pour allumer, 'OFF' pour éteindre
+
+    Returns:
+        Message de confirmation
+
+    Raises:
+        ValueError: Si une erreur survient (connexion, envoi, etc.)
+    """
+    cmd = "TURN_ON_FAN" if state.upper() == "ON" else "TURN_OFF_FAN"
+    try:
+        serial_manager.send(cmd)
+    except HTTPException as e:
+        raise ValueError(e.detail) from e
+    return f"Fan {state.upper()}"
+
+
+def get_available_tools() -> list:
+    """
+    Retourne la liste des outils disponibles pour le LLM.
+
+    Returns:
+        Liste des outils avec leurs paramètres
+    """
+    return [
+        {
+            "name": "control_leds",
+            "description": "Contrôle les LEDs (lumières)",
+            "params": ["state: ON|OFF"],
+        },
+        {
+            "name": "control_door",
+            "description": "Contrôle la porte (servo)",
+            "params": ["action: OPEN|CLOSE"],
+        },
+        {
+            "name": "control_fan",
+            "description": "Contrôle le ventilateur",
+            "params": ["state: ON|OFF"],
+        },
+    ]
+
+
+# ============================================================
+# Application FastAPI
+# ============================================================
+
 app = FastAPI(title="Smart Home Control + MCP", version="0.1.0")
 
 app.add_middleware(
@@ -143,6 +281,115 @@ async def mcp_invoke(request: MCPInvokeRequest) -> dict:
     action = request.name.strip().upper()
     serial_manager.send(action)
     return {"status": "ok", "action": action, "notes": "Forwarded via MCP endpoint"}
+
+
+# ============================================================
+# Endpoints MCP Tester
+# ============================================================
+
+
+@app.post("/mcp/connect")
+async def mcp_connect() -> dict:
+    """Connecte au serveur MCP."""
+    client = await get_mcp_client()
+    success = await client.connect()
+    if success:
+        await ws_manager.broadcast({"type": "system", "message": "MCP connecté"})
+        return {"status": "connected"}
+    raise HTTPException(status_code=500, detail="Échec de connexion au serveur MCP")
+
+
+@app.post("/mcp/disconnect")
+async def mcp_disconnect() -> dict:
+    """Déconnecte du serveur MCP."""
+    client = await get_mcp_client()
+    await client.disconnect()
+    await ws_manager.broadcast({"type": "system", "message": "MCP déconnecté"})
+    return {"status": "disconnected"}
+
+
+@app.get("/mcp/status")
+async def mcp_status() -> dict:
+    """Retourne l'état de la connexion MCP."""
+    client = await get_mcp_client()
+    return {"connected": client.is_connected}
+
+
+@app.get("/mcp/tools")
+async def mcp_list_tools() -> dict:
+    """Liste les tools disponibles sur le serveur MCP."""
+    client = await get_mcp_client()
+    if not client.is_connected:
+        raise HTTPException(status_code=400, detail="Non connecté au serveur MCP")
+    tools = await client.list_tools()
+    return {"tools": tools}
+
+
+@app.post("/mcp/call")
+async def mcp_call_tool(request: MCPToolRequest) -> dict:
+    """Appelle un tool MCP."""
+    client = await get_mcp_client()
+    if not client.is_connected:
+        raise HTTPException(status_code=400, detail="Non connecté au serveur MCP")
+
+    tool = request.tool.lower()
+    action = request.action.upper()
+
+    if tool == "control_door":
+        result = await client.control_door(action)
+    elif tool == "control_fans":
+        result = await client.control_fans(action)
+    elif tool == "control_leds":
+        result = await client.control_leds(action)
+    else:
+        raise HTTPException(status_code=400, detail=f"Tool inconnu: {tool}")
+
+    # Broadcast l'événement aux clients WebSocket
+    await ws_manager.broadcast({
+        "type": "mcp_call",
+        "tool": tool,
+        "action": action,
+        "result": result,
+    })
+
+    return result
+
+
+@app.get("/mcp/log")
+async def mcp_get_log() -> dict:
+    """Retourne le log des événements MCP."""
+    return {"events": get_event_log()}
+
+
+@app.delete("/mcp/log")
+async def mcp_clear_log() -> dict:
+    """Vide le log des événements MCP."""
+    clear_event_log()
+    return {"status": "cleared"}
+
+
+# ============================================================
+# WebSocket pour le live log
+# ============================================================
+
+
+@app.websocket("/ws/log")
+async def websocket_log(websocket: WebSocket):
+    """WebSocket pour recevoir les événements en temps réel."""
+    await ws_manager.connect(websocket)
+    try:
+        # Envoyer les événements existants
+        events = get_event_log()
+        if events:
+            await websocket.send_json({"type": "history", "events": events})
+
+        # Garder la connexion ouverte et attendre les messages
+        while True:
+            # On attend juste pour garder la connexion active
+            data = await websocket.receive_text()
+            # Optionnel: traiter les messages du client si nécessaire
+    except WebSocketDisconnect:
+        ws_manager.disconnect(websocket)
 
 
 if __name__ == "__main__":

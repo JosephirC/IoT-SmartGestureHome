@@ -11,8 +11,12 @@ body {
 }
 
 .app {
-  max-width: 900px;
+  max-width: 1400px;
   margin: 0 auto;
+}
+
+header {
+  margin-bottom: 24px;
 }
 
 header h1 {
@@ -21,19 +25,59 @@ header h1 {
 }
 
 header p {
-  margin: 0 0 16px 0;
+  margin: 0;
   color: #94a3b8;
 }
 
+/* Grid Layout */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 1000px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Cards */
 .card {
   background: #111827;
   border: 1px solid #1f2937;
   border-radius: 12px;
   padding: 20px;
-  margin-bottom: 16px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
 
+.card h2 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  color: #f1f5f9;
+}
+
+.card h3 {
+  margin: 16px 0 12px 0;
+  font-size: 14px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.subtitle {
+  margin: 0 0 16px 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* Form Elements */
 .row {
   display: flex;
   gap: 8px;
@@ -44,6 +88,7 @@ header p {
 label {
   min-width: 90px;
   color: #cbd5e1;
+  font-size: 14px;
 }
 
 select,
@@ -54,8 +99,16 @@ input {
   border: 1px solid #1f2937;
   background: #0b1221;
   color: #e2e8f0;
+  font-size: 14px;
 }
 
+select:focus,
+input:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+/* Buttons */
 button {
   border: none;
   border-radius: 10px;
@@ -63,13 +116,19 @@ button {
   background: linear-gradient(120deg, #22d3ee, #6366f1);
   color: #0b1221;
   font-weight: 700;
+  font-size: 13px;
   cursor: pointer;
   transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
-button:hover {
+button:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 button.secondary {
@@ -78,17 +137,155 @@ button.secondary {
   border: 1px solid #293445;
 }
 
+button.secondary:hover:not(:disabled) {
+  background: #293445;
+  box-shadow: none;
+  transform: none;
+}
+
+button.primary {
+  background: linear-gradient(120deg, #10b981, #059669);
+}
+
+button.small {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+/* Control Buttons */
 .actions .buttons {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
 }
 
+/* Status */
 .status {
-  color: #e0f2fe;
-  margin-top: 4px;
+  color: #94a3b8;
+  margin-top: 8px;
+  font-size: 13px;
+  padding: 8px 12px;
+  background: #0b1221;
+  border-radius: 6px;
+}
+
+.status.connected {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
 }
 
 .status.subtle {
   color: #a5b4fc;
+  background: transparent;
+  padding: 4px 0;
+}
+
+/* MCP Section */
+.mcp-section .row {
+  margin-bottom: 8px;
+}
+
+.mcp-tools {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #1f2937;
+}
+
+.tool-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.tool-label {
+  min-width: 80px;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.tool-group button {
+  flex: 1;
+  padding: 8px 12px;
+}
+
+/* Log Section */
+.log-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 400px;
+}
+
+.log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.log-header h2 {
+  margin: 0;
+}
+
+.log-container {
+  flex: 1;
+  background: #0b1221;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+  padding: 12px;
+  overflow-y: auto;
+  max-height: 500px;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 12px;
+}
+
+.log-empty {
+  color: #475569;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.log-entry {
+  display: flex;
+  gap: 12px;
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  border-radius: 6px;
+  background: #111827;
+  border-left: 3px solid #1f2937;
+}
+
+.log-entry.success {
+  border-left-color: #10b981;
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.log-entry.error {
+  border-left-color: #ef4444;
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.log-entry.system {
+  border-left-color: #6366f1;
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.log-entry.call {
+  border-left-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.log-time {
+  color: #475569;
+  white-space: nowrap;
+}
+
+.log-content {
+  color: #cbd5e1;
+  word-break: break-word;
+}
+
+.log-content strong {
+  color: #22d3ee;
 }

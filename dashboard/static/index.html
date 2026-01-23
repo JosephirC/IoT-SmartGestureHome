@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,36 +10,85 @@
     <div class="app">
       <header>
         <h1>Smart Home Controller</h1>
-        <p>Control door, fan, and lights connected to your Arduino.</p>
+        <p>Controle la porte, le ventilateur et les lumieres via Arduino.</p>
       </header>
 
-      <section class="card">
-        <h2>Connection</h2>
-        <div class="row">
-          <label for="portSelect">Serial port</label>
-          <select id="portSelect"></select>
-          <button id="refreshPorts" class="secondary">Refresh</button>
-        </div>
-        <div class="row">
-          <label for="baudInput">Baud rate</label>
-          <input id="baudInput" type="number" value="9600" />
-          <button id="connectBtn">Connect</button>
-        </div>
-        <div id="status" class="status">Not connected</div>
-      </section>
+      <div class="grid">
+        <!-- Colonne gauche: Connexions et controles -->
+        <div class="column">
+          <section class="card">
+            <h2>Connexion Serie</h2>
+            <div class="row">
+              <label for="portSelect">Port serie</label>
+              <select id="portSelect"></select>
+              <button id="refreshPorts" class="secondary">Refresh</button>
+            </div>
+            <div class="row">
+              <label for="baudInput">Baud rate</label>
+              <input id="baudInput" type="number" value="9600" />
+              <button id="connectBtn">Connecter</button>
+            </div>
+            <div id="status" class="status">Non connecte</div>
+          </section>
 
-      <section class="card actions">
-        <h2>Controls</h2>
-        <div class="buttons">
-          <button data-action="OPEN_DOOR">Open Door</button>
-          <button data-action="CLOSE_DOOR">Close Door</button>
-          <button data-action="TURN_ON_FAN">Turn On Fan</button>
-          <button data-action="TURN_OFF_FAN">Turn Off Fan</button>
-          <button data-action="TURN_ON_LIGHTS">Turn On Lights</button>
-          <button data-action="TURN_OFF_LIGHTS">Turn Off Lights</button>
+          <section class="card actions">
+            <h2>Controles Manuels</h2>
+            <p class="subtitle">Commandes directes via port serie</p>
+            <div class="buttons">
+              <button data-action="OPEN_DOOR">Ouvrir Porte</button>
+              <button data-action="CLOSE_DOOR">Fermer Porte</button>
+              <button data-action="TURN_ON_FAN">Allumer Ventilo</button>
+              <button data-action="TURN_OFF_FAN">Eteindre Ventilo</button>
+              <button data-action="TURN_ON_LIGHTS">Allumer Lumieres</button>
+              <button data-action="TURN_OFF_LIGHTS">Eteindre Lumieres</button>
+            </div>
+            <div id="lastAction" class="status subtle"></div>
+          </section>
+
+          <section class="card mcp-section">
+            <h2>MCP Tester</h2>
+            <p class="subtitle">Test des tools via serveur MCP</p>
+            <div class="row">
+              <button id="mcpConnectBtn" class="primary">Connecter MCP</button>
+              <button id="mcpDisconnectBtn" class="secondary">Deconnecter</button>
+            </div>
+            <div id="mcpStatus" class="status">MCP non connecte</div>
+
+            <div class="mcp-tools">
+              <h3>Tools disponibles</h3>
+              <div class="tool-group">
+                <span class="tool-label">Porte:</span>
+                <button data-mcp-tool="control_door" data-mcp-action="OPEN">Ouvrir</button>
+                <button data-mcp-tool="control_door" data-mcp-action="CLOSE">Fermer</button>
+              </div>
+              <div class="tool-group">
+                <span class="tool-label">Ventilo:</span>
+                <button data-mcp-tool="control_fans" data-mcp-action="ON">Allumer</button>
+                <button data-mcp-tool="control_fans" data-mcp-action="OFF">Eteindre</button>
+              </div>
+              <div class="tool-group">
+                <span class="tool-label">Lumieres:</span>
+                <button data-mcp-tool="control_leds" data-mcp-action="ON">Allumer</button>
+                <button data-mcp-tool="control_leds" data-mcp-action="OFF">Eteindre</button>
+              </div>
+            </div>
+          </section>
         </div>
-        <div id="lastAction" class="status subtle"></div>
-      </section>
+
+        <!-- Colonne droite: Live Log -->
+        <div class="column">
+          <section class="card log-section">
+            <div class="log-header">
+              <h2>Live Log</h2>
+              <button id="clearLogBtn" class="secondary small">Effacer</button>
+            </div>
+            <p class="subtitle">Historique des appels MCP en temps reel</p>
+            <div id="logContainer" class="log-container">
+              <div class="log-empty">Aucun evenement. Connectez le MCP et testez les tools.</div>
+            </div>
+          </section>
+        </div>
+      </div>
     </div>
 
     <script src="/static/app.js"></script>

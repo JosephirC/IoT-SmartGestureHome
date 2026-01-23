@@ -4,7 +4,10 @@
 // Pin assignments (adjust to your wiring)
 const int DOOR_PIN = 8;   // Servo signal pin
 const int FAN_PIN = 9;    // PWM pin for transistor/driver controlling DC fan
-const int LED_PIN = 6;    // Digital pin for LEDs via resistor
+const int LED_PIN_1 = 13;    // Digital pin for LEDs via resistor
+const int LED_PIN_2 = 6;    // Digital pin for LEDs via resistor
+const int LED_PIN_3 = 7;    // Digital pin for LEDs via resistor
+
 const int POTENTIOMETER_PIN = A1;
 
 Servo doorServo;
@@ -26,7 +29,11 @@ void setup() {
   pinMode(FAN_PIN, OUTPUT); // Pour envoyer la vitesse du ventilateur au transistor et ajuster/réguler la vitesse du moteur
   pinMode(POTENTIOMETER_PIN, INPUT); // Pour controler la vitesse du ventilateur
   doorServo.attach(DOOR_PIN);
-  pinMode(LED_PIN, OUTPUT);
+
+  pinMode(LED_PIN_1, OUTPUT);
+  pinMode(LED_PIN_2, OUTPUT);
+  pinMode(LED_PIN_3, OUTPUT);
+
 
   //doorServo.write(0);
 }
@@ -119,11 +126,17 @@ void turnOffFan() {
 }
 
 void turnOnLights() {
-  digitalWrite(LED_PIN, HIGH);
+  digitalWrite(LED_PIN_1, HIGH);
+  digitalWrite(LED_PIN_2, HIGH);
+  digitalWrite(LED_PIN_3, HIGH);
+
   lcd.print("TURN ON LED");
 }
 
 void turnOffLights() {
-  digitalWrite(LED_PIN, LOW);
+  digitalWrite(LED_PIN_1, LOW);
+  digitalWrite(LED_PIN_2, LOW);
+  digitalWrite(LED_PIN_3, LOW);
+
   lcd.print("TURN OFF LED");
 }

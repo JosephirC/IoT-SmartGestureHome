@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Home Control</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header>
+        <h1>Smart Home Controller</h1>
+        <p>Control door, fan, and lights connected to your Arduino.</p>
+      </header>
+
+      <section class="card">
+        <h2>Connection</h2>
+        <div class="row">
+          <label for="portSelect">Serial port</label>
+          <select id="portSelect"></select>
+          <button id="refreshPorts" class="secondary">Refresh</button>
+        </div>
+        <div class="row">
+          <label for="baudInput">Baud rate</label>
+          <input id="baudInput" type="number" value="9600" />
+          <button id="connectBtn">Connect</button>
+        </div>
+        <div id="status" class="status">Not connected</div>
+      </section>
+
+      <section class="card actions">
+        <h2>Controls</h2>
+        <div class="buttons">
+          <button data-action="OPEN_DOOR">Open Door</button>
+          <button data-action="CLOSE_DOOR">Close Door</button>
+          <button data-action="TURN_ON_FAN">Turn On Fan</button>
+          <button data-action="TURN_OFF_FAN">Turn Off Fan</button>
+          <button data-action="TURN_ON_LIGHTS">Turn On Lights</button>
+          <button data-action="TURN_OFF_LIGHTS">Turn Off Lights</button>
+        </div>
+        <div id="lastAction" class="status subtle"></div>
+      </section>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

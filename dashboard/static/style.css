@@ -1,0 +1,94 @@
+* {
+  box-sizing: border-box;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 24px;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.app {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+header h1 {
+  margin: 0 0 8px 0;
+  font-size: 28px;
+}
+
+header p {
+  margin: 0 0 16px 0;
+  color: #94a3b8;
+}
+
+.card {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+label {
+  min-width: 90px;
+  color: #cbd5e1;
+}
+
+select,
+input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #1f2937;
+  background: #0b1221;
+  color: #e2e8f0;
+}
+
+button {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  background: linear-gradient(120deg, #22d3ee, #6366f1);
+  color: #0b1221;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+}
+
+button.secondary {
+  background: #1f2937;
+  color: #e2e8f0;
+  border: 1px solid #293445;
+}
+
+.actions .buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.status {
+  color: #e0f2fe;
+  margin-top: 4px;
+}
+
+.status.subtle {
+  color: #a5b4fc;
+}

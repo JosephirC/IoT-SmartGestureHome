@@ -15,7 +15,9 @@ LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 int fan_speed_raw_value = 0; // Valeur du potentiomètre entre 0..1023
 int fan_speed_value = 0; // Vitesse du moteur entre 0..255
+bool fanIsOn = false;
 
+String serialBuffer = "";
 void setup() {
   Serial.begin(9600);
   lcd.begin(16, 2); // set up the LCD's number of columns and rows (16x2)
@@ -23,17 +25,36 @@ void setup() {
 
   pinMode(FAN_PIN, OUTPUT); // Pour envoyer la vitesse du ventilateur au transistor et ajuster/réguler la vitesse du moteur
   pinMode(POTENTIOMETER_PIN, INPUT); // Pour controler la vitesse du ventilateur
-  //doorServo.attach(DOOR_PIN);
+  doorServo.attach(DOOR_PIN);
   pinMode(LED_PIN, OUTPUT);
+
+  //doorServo.write(0);
 }
 
 void loop() {
-  if (Serial.available()) {
-    String command = Serial.readStringUntil('\n');
-    command.trim();
-    handleCommand(command);
-    
+  fan_speed_raw_value = analogRead(POTENTIOMETER_PIN); // Récupérer la valeur du potentiomètre
+  fan_speed_value = map(fan_speed_raw_value, 0, 1023, 200, 255); // Transformer la valeur du potentiomètre en vitesse de rotation du moteur
+  if (fanIsOn) {
+    analogWrite(FAN_PIN, fan_speed_value); // Envoyer la vitesse du moteur au PIN correspondant
   }
+
+  if (Serial.available()) {
+    //String command = Serial.readStringUntil('\n');
+    //command.trim();
+    //handleCommand(command);
+
+    char c = Serial.read();
+    if (c == '\n') {          // fin de commande
+      serialBuffer.trim();
+      handleCommand(serialBuffer);
+      serialBuffer = "";     // reset buffer
+    } else {
+      serialBuffer += c;     // accumuler
+    }
+  }
+
+  
+  
 }
 
 
@@ -51,6 +72,22 @@ void handleCommand(const String& command) {
     turnOnLights();
   } else if (command == "TURN_OFF_LIGHTS") {
     turnOffLights();
+  } else if (command.startsWith("DOOR_CALIBRATION:")) {
+
+    // Extraire la partie après le :
+    String valueStr = command.substring(17);   // longueur de "CALIBRATION_DOOR:" = 17
+    int angle = valueStr.toInt();               // convertir en int
+
+    // Sécurité: limiter entre 0 et 180
+    //angle = constrain(angle, 0, 90);
+
+    doorServo.write(angle);
+
+    lcd.print("Door calib:");
+    lcd.print(angle);
+
+    Serial.print("Door calibrated to ");
+    Serial.println(angle);
   } else {
     lcd.print("UNKNOWN COMMAND");
   }
@@ -70,16 +107,13 @@ void closeDoor() {
 }
 
 void turnOnFan() {
-  fan_speed_raw_value = analogRead(POTENTIOMETER_PIN); // Récupérer la valeur du potentiomètre
-  fan_speed_value = map(fan_speed_raw_value, 0, 1023, 0, 255); // Transformer la valeur du potentiomètre en vitesse de rotation du moteur
-  
   // Logique Activer ou Eteindre le ventilateur
-  
-  analogWrite(FAN_PIN, fan_speed_value); // Envoyer la vitesse du moteur au PIN correspondant
+  fanIsOn = true;
   lcd.print("TURN ON FAN :" + String(fan_speed_value));
 }
 
 void turnOffFan() {
+  fanIsOn = false;
   analogWrite(FAN_PIN, 0);
   lcd.print("TURN OFF FAN");
 }

@@ -9,6 +9,8 @@ const int LED_PIN_2 = 6;    // Digital pin for LEDs via resistor
 const int LED_PIN_3 = 7;    // Digital pin for LEDs via resistor
 
 const int POTENTIOMETER_PIN = A1;
+const int PHOTORESISTOR_PIN = A0;
+
 
 Servo doorServo;
 
@@ -21,6 +23,10 @@ int fan_speed_value = 0; // Vitesse du moteur entre 0..255
 bool fanIsOn = false;
 
 String serialBuffer = "";
+
+bool systemIsOn = true;
+bool lastSystemState = true;
+
 void setup() {
   Serial.begin(9600);
   lcd.begin(16, 2); // set up the LCD's number of columns and rows (16x2)
@@ -39,28 +45,51 @@ void setup() {
 }
 
 void loop() {
-  fan_speed_raw_value = analogRead(POTENTIOMETER_PIN); // Récupérer la valeur du potentiomètre
-  fan_speed_value = map(fan_speed_raw_value, 0, 1023, 200, 255); // Transformer la valeur du potentiomètre en vitesse de rotation du moteur
-  if (fanIsOn) {
-    analogWrite(FAN_PIN, fan_speed_value); // Envoyer la vitesse du moteur au PIN correspondant
+  int photoresistor_value = analogRead(PHOTORESISTOR_PIN);
+  //Serial.println(photoresistor_value);
+
+  if(photoresistor_value > 50) {
+    systemIsOn = true;
+  }
+  else {
+    systemIsOn = false;
   }
 
-  if (Serial.available()) {
-    //String command = Serial.readStringUntil('\n');
-    //command.trim();
-    //handleCommand(command);
-
-    char c = Serial.read();
-    if (c == '\n') {          // fin de commande
-      serialBuffer.trim();
-      handleCommand(serialBuffer);
-      serialBuffer = "";     // reset buffer
+  if (systemIsOn != lastSystemState) {
+    lcd.clear();
+    if (!systemIsOn) {
+      lcd.setCursor(0, 0);
+      lcd.print("SYSTEM OFF");
+      analogWrite(FAN_PIN, 0);   // sécurité
     } else {
-      serialBuffer += c;     // accumuler
+      lcd.setCursor(0, 0);
+      lcd.print("SYSTEM ON");
+    }
+    lastSystemState = systemIsOn;
+  }
+
+  if(systemIsOn) {
+    fan_speed_raw_value = analogRead(POTENTIOMETER_PIN); // Récupérer la valeur du potentiomètre
+    fan_speed_value = map(fan_speed_raw_value, 0, 1023, 200, 255); // Transformer la valeur du potentiomètre en vitesse de rotation du moteur
+    if (fanIsOn) {
+      analogWrite(FAN_PIN, fan_speed_value); // Envoyer la vitesse du moteur au PIN correspondant
+    }
+
+    if (Serial.available()) {
+      //String command = Serial.readStringUntil('\n');
+      //command.trim();
+      //handleCommand(command);
+
+      char c = Serial.read();
+      if (c == '\n') {          // fin de commande
+        serialBuffer.trim();
+        handleCommand(serialBuffer);
+        serialBuffer = "";     // reset buffer
+      } else {
+        serialBuffer += c;     // accumuler
+      }
     }
   }
-
-  
   
 }
 

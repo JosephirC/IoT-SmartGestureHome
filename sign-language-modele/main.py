@@ -48,7 +48,7 @@ def real_time_asl():
     res = []
     tflite_keras_model = TFLiteModel(islr_models=models)
     sequence_data = []
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(0)
     
     start = time.time()
     

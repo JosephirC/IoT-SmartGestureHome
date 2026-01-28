@@ -25,7 +25,7 @@ THRESH_HOLD = 0.5
 mp_holistic = mp_solutions.holistic
 
 # Filtrer uniquement les 6 gestes attendus (en lower car p2s_map renvoie souvent en lower)
-ALLOWED_GESTURES = {"oui", "non", "bras", "hello", "cut", "animal"}
+# ALLOWED_GESTURES = {"oui", "non", "bras", "hello", "cut", "animal"}
 
 
 try:
@@ -128,10 +128,10 @@ async def generate_frames():
                             decoded_sign = decoder(sign_idx)
 
                             # Filtrage sur tes 6 gestes (pour éviter le bruit)
-                            if decoded_sign:
-                                d = decoded_sign.strip().lower()
-                                if d not in ALLOWED_GESTURES:
-                                    decoded_sign = None
+                            # if decoded_sign:
+                            #     d = decoded_sign.strip().lower()
+                            #     if d not in ALLOWED_GESTURES:
+                            #         decoded_sign = None
 
                         sequence_data = []
 

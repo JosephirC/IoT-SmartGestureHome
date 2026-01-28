@@ -1,14 +1,23 @@
 """Application FastAPI principale"""
 
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from services.mcp_service import shutdown_mcp
-import os
 
+from services.mcp_service import shutdown_mcp
 from routers import camera, devices
 
-app = FastAPI(title="SmartHome API", version="1.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: si tu veux initialiser des clients globaux, fais-le ici.
+    yield
+    # Shutdown: fermeture propre du client MCP si ouvert.
+    await shutdown_mcp()
+
+
+app = FastAPI(title="SmartHome API", version="1.0", lifespan=lifespan)
 
 # Inclure les routers
 app.include_router(camera.router)
@@ -29,11 +38,6 @@ async def health():
     """Health check"""
     return {"status": "ok"}
 
-
-@app.on_event("shutdown")
-async def on_shutdown():
-    """Actions à effectuer lors de l'arrêt de l'application"""
-    await shutdown_mcp()
 
 if __name__ == "__main__":
     import uvicorn

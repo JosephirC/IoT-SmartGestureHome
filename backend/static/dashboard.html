@@ -217,6 +217,7 @@
 
     <script>
         const { createApp } = Vue;
+
         createApp({
             data() {
                 return {
@@ -224,43 +225,89 @@
                     gesture: '',
                     input: '',
                     state: { leds: 'OFF', fans: 'OFF', door: 'CLOSED' },
-                    logs: []
+                    logs: [],
+                    lastSentGesture: '',
+                    lastSentAt: 0,
+                    minIntervalMs: 1500,
+                    lastSentTimestamp: null,
                 };
             },
             mounted() {
                 this.updateAll();
-                setInterval(() => this.updateAll(), 2000);
+                setInterval(() => this.updateAll(), 800);
             },
             methods: {
                 async updateAll() {
+                    // 1) state
                     try {
                         const res = await fetch('/api/state');
                         if (res.ok) this.state = await res.json();
                     } catch (e) { }
+
+                    // 2) last gesture
                     try {
                         const res = await fetch('/camera/last_gesture');
-                        if (res.ok) {
-                            const data = await res.json();
-                            if (data.gesture) this.gesture = data.gesture;
+                        if (!res.ok) return;
+
+                        const data = await res.json();
+
+                        // Affichage
+                        const g = (data.gesture || '').trim();
+                        this.gesture = g;
+
+                        // Rien à envoyer
+                        if (!g) return;
+
+                        const ts = data.timestamp || null;
+                        const now = Date.now();
+
+                        // Si pas de timestamp, fallback sur le texte (moins fiable mais OK)
+                        const isNew = ts ? (ts !== this.lastSentTimestamp) : (g !== this.lastSentGesture);
+                        const cooldownOk = (now - this.lastSentAt) >= this.minIntervalMs;
+
+                        if (isNew && cooldownOk) {
+                            if (ts) this.lastSentTimestamp = ts;
+                            this.lastSentGesture = g;
+                            this.lastSentAt = now;
+
+                            await this.sendGesture(g);
                         }
                     } catch (e) { }
                 },
-                async send() {
-                    if (!this.input.trim()) return;
+
+                async sendGesture(gestureText) {
                     try {
                         const res = await fetch('/api/gesture', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ gesture: this.input })
+                            body: JSON.stringify({ gesture: gestureText })
                         });
-                        if (res.ok) {
-                            const data = await res.json();
-                            const time = new Date().toLocaleTimeString('fr-FR');
-                            this.logs.unshift({ msg: `${this.input} → ${data.tool}`, time });
-                            this.input = '';
-                            setTimeout(() => this.updateAll(), 500);
+
+                        const time = new Date().toLocaleTimeString('fr-FR');
+
+                        if (!res.ok) {
+                            this.logs.unshift({ msg: `${gestureText} → erreur HTTP`, time });
+                            return;
                         }
-                    } catch (e) { }
+
+                        const data = await res.json();
+                        const tool = data.tool || data.message || data.status || 'OK';
+                        const action = data.action ? ` ${data.action}` : '';
+                        this.logs.unshift({ msg: `${gestureText} → ${tool}${action}`, time });
+
+                        // refresh state après action
+                        setTimeout(() => this.updateAll(), 300);
+                    } catch (e) {
+                        const time = new Date().toLocaleTimeString('fr-FR');
+                        this.logs.unshift({ msg: `${gestureText} → erreur réseau`, time });
+                    }
+                },
+
+                async send() {
+                    const t = this.input.trim();
+                    if (!t) return;
+                    this.input = '';
+                    await this.sendGesture(t);
                 }
             }
         }).mount('#app');

@@ -51,7 +51,7 @@ Webcam → MediaPipe → Modèle TFLite → FastAPI → Ollama LLM → Serveur M
 - Python 3.11.9
 - Environnement Conda : `iot-smarthome`
 - Ollama (serveur LLM local sur le port 11434)
-- Arduino CLI
+- Arduino IDE / Arduino CLI
 
 ## Installation
 
@@ -82,8 +82,14 @@ arduino-cli upload -p /dev/ttyUSB0 --fqbn arduino:avr:uno fastapi_dashboard/ardu
 
 ```bash
 ollama serve
-ollama pull llama3.1:8b
+ollama pull llama3.1:8b-Q4_K_M
 ```
+
+#### Modèle LLM utilisé
+
+Nous utilisons le modèle **`llama3.1:8b-Q4_K_M`**, une version quantifiée (4-bit) du modèle Llama 3.1 8B Instruct. La quantification permet de réduire significativement l'empreinte mémoire tout en conservant des performances acceptables pour notre cas d'usage.
+
+Malgré la quantification, le modèle reste capable de suivre correctement les instructions grâce à notre **system prompt** spécialement conçu pour le mapping geste → action. Le modèle est installé et tourne **localement** via Ollama, garantissant une latence faible et aucune dépendance à des services cloud.
 
 ## Utilisation
 
@@ -106,14 +112,30 @@ fastmcp run mcp_server/server.py:mcp
 
 ## Points d'API
 
+### Backend FastAPI (port 8000)
+
 | Endpoint | Méthode | Description |
 |----------|---------|-------------|
 | `/` | GET | Dashboard Vue.js |
 | `/camera/video_feed` | GET | Flux vidéo MJPEG |
 | `/camera/last_gesture` | GET | Dernier geste détecté |
 | `/api/state` | GET | États actuels des appareils |
-| `/api/gesture` | POST | Envoyer une commande de geste |
+| `/api/gesture` | POST | Envoyer une commande de geste (appelle Ollama + MCP en interne) |
 | `/health` | GET | Vérification de santé |
+
+### Services internes (non exposés sur Swagger)
+
+Le endpoint `/api/gesture` orchestre en interne deux services :
+
+1. **Ollama LLM** (port 11434) - Appelé via `llm_service.py` pour traduire le geste en commande (tool + action)
+2. **Serveur FastMCP** - Appelé via `mcp_service.py` pour exécuter la commande sur l'Arduino
+
+Ces services ne sont pas exposés comme endpoints HTTP directs - ils sont utilisés en arrière-plan par le backend.
+
+#### Outils MCP disponibles
+- `control_door(action)` - ouvrir/fermer la porte
+- `control_fans(action)` - allumer/éteindre le ventilateur
+- `control_leds(action)` - allumer/éteindre les LEDs
 
 ## Configuration
 
@@ -121,7 +143,7 @@ fastmcp run mcp_server/server.py:mcp
 
 ```bash
 OLLAMA_HOST=http://127.0.0.1:11434
-OLLAMA_MODEL=llama3.1:8b
+OLLAMA_MODEL=llama3.1:8b-Q4_K_M
 MCP_ENTRY=mcp_server/server.py:mcp
 MCP_COMMAND=fastmcp
 ```

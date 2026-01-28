@@ -13,9 +13,9 @@ async def translate_gesture(gesture: str) -> tuple[str, dict]:
 You will receive a detected gesture label from a fixed set.
 
 Allowed gesture labels (case-insensitive):
-- OUI
-- NON
-- BRAS
+- YES
+- NO
+- ARM
 - HELLO
 - CUT
 - ANIMAL
@@ -23,9 +23,9 @@ Allowed gesture labels (case-insensitive):
 Map gestures to actions EXACTLY as follows:
 - HELLO  -> control_door OPEN
 - CUT    -> control_door CLOSE
-- OUI    -> control_leds ON
-- NON    -> control_leds OFF
-- BRAS   -> control_fans ON
+- YES    -> control_leds ON
+- NO    -> control_leds OFF
+- ARM   -> control_fans ON
 - ANIMAL -> control_fans OFF
 
 Rules:

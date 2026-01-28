@@ -94,10 +94,10 @@ def control_leds(action: str) -> str:
         command = action.strip().upper()
 
         if command == "ON":
-            arduino.write(b"TURN_ON_LEDS\n")
+            arduino.write(b"TURN_ON_LIGHTS\n")
             return "✓ LEDs turned on"
         elif command == "OFF":
-            arduino.write(b"TURN_OFF_LEDS\n")
+            arduino.write(b"TURN_OFF_LIGHTS\n")
             return "✓ LEDs turned off"
         else:
             return "✗ Invalid command. Use: ON or OFF"

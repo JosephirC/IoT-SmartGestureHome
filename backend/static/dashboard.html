@@ -167,33 +167,33 @@
 <body>
     <div id="app">
         <div class="container">
-            <h1>🏠 SmartHome - Reconnaissance de Gestes</h1>
+            <h1>SmartHome - Reconnaissance de Gestes</h1>
 
             <div class="camera-section">
                 <div class="camera-frame">
                     <img :src="cameraUrl" alt="Caméra">
                 </div>
                 <div class="gesture-display" :class="{ empty: !gesture }">
-                    <div v-if="gesture">✋ Geste: <strong>{{ gesture }}</strong></div>
+                    <div v-if="gesture">Geste: <strong>{{ gesture }}</strong></div>
                     <div v-else>En attente de geste...</div>
                 </div>
             </div>
 
             <div class="controls-grid">
                 <div class="control-card">
-                    <h3>💡 Lumières</h3>
+                    <h3>Lumières</h3>
                     <div class="status-light" :class="{ on: state.leds === 'ON', off: state.leds !== 'ON' }"></div>
                     <p>{{ state.leds === 'ON' ? 'Allumées' : 'Éteintes' }}</p>
                 </div>
 
                 <div class="control-card">
-                    <h3>❄️ Ventilateurs</h3>
+                    <h3>Ventilateurs</h3>
                     <div class="status-light" :class="{ on: state.fans === 'ON', off: state.fans !== 'ON' }"></div>
                     <p>{{ state.fans === 'ON' ? 'Actifs' : 'Inactifs' }}</p>
                 </div>
 
                 <div class="control-card">
-                    <h3>🔓 Porte</h3>
+                    <h3>Porte</h3>
                     <div class="status-light" :class="{ on: state.door === 'OPEN', off: state.door !== 'OPEN' }"></div>
                     <p>{{ state.door === 'OPEN' ? 'Ouverte' : 'Fermée' }}</p>
                 </div>
@@ -205,7 +205,7 @@
             </div>
 
             <div class="log-section">
-                <h3>📋 Journal</h3>
+                <h3>Journal</h3>
                 <div v-if="logs.length === 0" style="color: #999;">Aucune action</div>
                 <div v-for="(log, i) in logs" :key="i" class="log-item">
                     <div>{{ log.msg }}</div>

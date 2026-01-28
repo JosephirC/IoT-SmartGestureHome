@@ -4,7 +4,7 @@ import subprocess
 
 SERIAL_PORT = '/dev/ttyACM0'
 BAUD_RATE = 9600
-SKETCH_NAME = "dashboard/arduino/smart_home/smart_home.ino"
+SKETCH_NAME = "fastapi_dashboard/arduino/smart_home.ino"
 CORE_TYPE = "arduino:avr:uno"
 
 # Global connection state

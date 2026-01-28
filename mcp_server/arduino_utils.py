@@ -8,6 +8,9 @@ SKETCH_NAME = "arduino:avr:uno"
 SKETCH_NAME = "firmware\test_domotique_maison.ino"
 CORE_TYPE = "arduino:avr:uno"
 
+# Global connection state
+_arduino: serial.Serial | None = None
+
 
 def get_arduino():
     """Établit la connexion série permanente."""
@@ -22,6 +25,17 @@ def get_arduino():
         except Exception as e:
             print(f"Erreur de connexion : {e}")
             return None
+    elif not _arduino.is_open:
+        try:
+            print(f"Reconnexion au port {SERIAL_PORT}...")
+            _arduino.open()
+            time.sleep(2)
+            return _arduino
+        except Exception as e:
+            print(f"Erreur de reconnexion : {e}")
+            _arduino = None
+            return None
+    return _arduino
 
 
 def flash_arduino():

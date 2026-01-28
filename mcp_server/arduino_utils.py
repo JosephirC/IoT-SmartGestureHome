@@ -2,10 +2,9 @@ import time
 import serial
 import subprocess
 
-SERIAL_PORT = 'COM7'
+SERIAL_PORT = '/dev/ttyACM0'
 BAUD_RATE = 9600
-SKETCH_NAME = "arduino:avr:uno"
-SKETCH_NAME = "firmware\test_domotique_maison.ino"
+SKETCH_NAME = "dashboard/arduino/smart_home/smart_home.ino"
 CORE_TYPE = "arduino:avr:uno"
 
 # Global connection state

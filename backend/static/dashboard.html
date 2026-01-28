@@ -17,7 +17,7 @@
             font-family: Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             padding: 20px;
-            min-height: 100vh;
+            min-height: 100vh;  
         }
 
         #app {
@@ -222,7 +222,8 @@
                 return {
                     cameraUrl: '/camera/video_feed',
                     gesture: '',
-                    lastProcessedGesture: '',  // Pour éviter de traiter le même geste 2x
+                    lastProcessedGesture: '',
+                    lastGestureTimestamp: null,
                     input: '',
                     state: { leds: 'OFF', fans: 'OFF', door: 'CLOSED' },
                     logs: [],
@@ -230,6 +231,7 @@
                 };
             },
             mounted() {
+                console.log('[DEBUG] Vue mounted - démarrage polling');
                 this.updateAll();
                 this.pollInterval = setInterval(() => this.updateAll(), 2000);
             },
@@ -238,6 +240,7 @@
             },
             methods: {
                 async updateAll() {
+                    console.log('[DEBUG] updateAll() appelé');
                     try {
                         const res = await fetch('/api/state');
                         if (res.ok) this.state = await res.json();
@@ -246,39 +249,48 @@
                         const res = await fetch('/camera/last_gesture');
                         if (res.ok) {
                             const data = await res.json();
-                            const newGesture = data.gesture || '';
-                            this.gesture = newGesture;
-
-                            // Si nouveau geste détecté, l'envoyer au LLM
-                            if (newGesture && newGesture !== this.lastProcessedGesture) {
-                                this.lastProcessedGesture = newGesture;
-                                this.processGesture(newGesture);
+                            console.log('[DEBUG] last_gesture response:', data);
+                            console.log('[DEBUG] lastGestureTimestamp stocké:', this.lastGestureTimestamp);
+                            this.gesture = data.gesture || '';
+                            // Si nouveau geste détecté (différent timestamp), envoyer au LLM
+                            if (data.gesture && data.timestamp) {
+                                console.log('[DEBUG] Geste reçu:', data.gesture, 'timestamp:', data.timestamp);
+                                if (data.timestamp !== this.lastGestureTimestamp) {
+                                    console.log('[DEBUG] NOUVEAU GESTE DETECTE, envoi POST...');
+                                    this.lastGestureTimestamp = data.timestamp;
+                                    await this.processGesture(data.gesture);
+                                } else {
+                                    console.log('[DEBUG] Même timestamp, pas de POST');
+                                }
+                            } else {
+                                console.log('[DEBUG] Pas de geste ou pas de timestamp');
                             }
                         }
                     } catch (e) { console.error('Erreur geste:', e); }
                 },
                 async processGesture(gesture) {
                     try {
-                        console.log(`[AUTO] Envoi geste au LLM: ${gesture}`);
+                        console.log('[DEBUG] processGesture() appelé avec:', gesture);
                         const res = await fetch('/api/gesture', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ gesture: gesture })
                         });
+                        console.log('[DEBUG] POST /api/gesture status:', res.status);
                         if (res.ok) {
                             const data = await res.json();
+                            console.log('[DEBUG] POST response:', data);
                             const time = new Date().toLocaleTimeString('fr-FR');
                             if (data.status === 'success') {
                                 this.logs.unshift({ msg: `${gesture} → ${data.tool} ${data.action}`, time });
                             } else if (data.status === 'skipped') {
                                 this.logs.unshift({ msg: `${gesture} → ${data.message}`, time });
                             } else {
-                                this.logs.unshift({ msg: `${gesture} → ${data.message || 'Erreur'}`, time });
+                                this.logs.unshift({ msg: `${gesture} → Erreur: ${data.message}`, time });
                             }
                             if (this.logs.length > 50) this.logs.pop();
-                            this.state = data.state || this.state;
                         }
-                    } catch (e) { console.error('Erreur traitement geste:', e); }
+                    } catch (e) { console.error('[DEBUG] Erreur envoi geste:', e); }
                 },
                 async send() {
                     if (!this.input.trim()) return;

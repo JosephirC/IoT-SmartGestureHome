@@ -25,7 +25,7 @@ THRESH_HOLD = 0.5
 mp_holistic = mp_solutions.holistic
 
 # Filtrer uniquement les 6 gestes attendus (en lower car p2s_map renvoie souvent en lower)
-ALLOWED_GESTURES = {"oui", "non", "bras", "hello", "cut", "animal"}
+# ALLOWED_GESTURES = {"oui", "non", "bras", "hello", "cut", "animal"}
 
 
 try:
@@ -70,7 +70,7 @@ except Exception as e:
     MODEL_AVAILABLE = False
 
 
-async def generate_frames():
+def generate_frames():
     """Génère les frames vidéo avec détection"""
     global last_gesture, last_gesture_time
 
@@ -128,10 +128,10 @@ async def generate_frames():
                             decoded_sign = decoder(sign_idx)
 
                             # Filtrage sur tes 6 gestes (pour éviter le bruit)
-                            if decoded_sign:
-                                d = decoded_sign.strip().lower()
-                                if d not in ALLOWED_GESTURES:
-                                    decoded_sign = None
+                            # if decoded_sign:
+                            #     d = decoded_sign.strip().lower()
+                            #     if d not in ALLOWED_GESTURES:
+                            #         decoded_sign = None
 
                         sequence_data = []
 
@@ -221,11 +221,25 @@ async def generate_frames():
         cap.release()
 
 
+def safe_generate_frames():
+    """Wrapper pour gérer proprement les déconnexions"""
+    gen = generate_frames()
+    try:
+        for frame in gen:
+            yield frame
+    except GeneratorExit:
+        print("[CAMERA] Client déconnecté")
+    except Exception as e:
+        print(f"[CAMERA] Erreur streaming: {e}")
+    finally:
+        gen.close()
+
+
 @router.get("/video_feed")
 async def video_feed():
     """Streaming vidéo"""
     return StreamingResponse(
-        generate_frames(),
+        safe_generate_frames(),
         media_type="multipart/x-mixed-replace; boundary=frame",
     )
 

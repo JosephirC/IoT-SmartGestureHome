@@ -2,6 +2,12 @@
 
 Système domotique intelligent avec contrôle par gestes utilisant la reconnaissance de la langue des signes.
 
+![Aperçu du projet](assets/image.png)
+
+## Démo
+
+> Vidéo de démonstration à venir dans `assets/demo.mp4`
+
 ## Aperçu
 
 Ce projet permet de contrôler des appareils domestiques (porte, lumières, ventilateurs) par des gestes de la main capturés par une webcam. Un modèle de machine learning reconnaît les gestes de la langue des signes et déclenche les actions correspondantes via un contrôleur Arduino.
@@ -30,7 +36,7 @@ Webcam → MediaPipe → Modèle TFLite → FastAPI → Ollama LLM → Serveur M
 | `OUI` | Allumer les lumières |
 | `NON` | Éteindre les lumières |
 | `BRAS` | Allumer le ventilateur |
-| `SCISSORS` | Éteindre le ventilateur |
+| `ANIMAL` | Éteindre le ventilateur |
 
 ## Prérequis
 
@@ -42,7 +48,7 @@ Webcam → MediaPipe → Modèle TFLite → FastAPI → Ollama LLM → Serveur M
 - Webcam
 
 ### Logiciel
-- Python 3.10+
+- Python 3.11.9
 - Environnement Conda : `iot-smarthome`
 - Ollama (serveur LLM local sur le port 11434)
 - Arduino CLI
@@ -140,6 +146,9 @@ L'Arduino répond avec `ACK:<ACTION>` en cas de succès.
 
 ```
 IoT-SmartGestureHome/
+├── assets/
+│   ├── image.png            # Image de présentation
+│   └── demo.mp4             # Vidéo de démonstration (à ajouter)
 ├── backend/
 │   ├── backend_main.py      # Point d'entrée FastAPI
 │   ├── config.py            # Configuration

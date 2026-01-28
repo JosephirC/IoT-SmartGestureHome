@@ -3,8 +3,10 @@ import asyncio
 from fastmcp import Client
 from fastmcp.client.transports import StdioTransport
 
-# Chemin vers ton serveur MCP (ajuste si besoin)
-MCP_ENTRY = os.getenv("MCP_ENTRY", "mcp_server/server.py:mcp")
+# Chemin absolu vers le serveur MCP (racine du projet)
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_MCP_SERVER_PATH = os.path.join(_PROJECT_ROOT, "mcp_server", "server.py")
+MCP_ENTRY = os.getenv("MCP_ENTRY", f"{_MCP_SERVER_PATH}:mcp")
 MCP_COMMAND = os.getenv("MCP_COMMAND", "fastmcp")
 
 _client: Client | None = None

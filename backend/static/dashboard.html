@@ -222,28 +222,63 @@
                 return {
                     cameraUrl: '/camera/video_feed',
                     gesture: '',
+                    lastProcessedGesture: '',  // Pour éviter de traiter le même geste 2x
                     input: '',
                     state: { leds: 'OFF', fans: 'OFF', door: 'CLOSED' },
-                    logs: []
+                    logs: [],
+                    pollInterval: null
                 };
             },
             mounted() {
                 this.updateAll();
-                setInterval(() => this.updateAll(), 2000);
+                this.pollInterval = setInterval(() => this.updateAll(), 2000);
+            },
+            unmounted() {
+                if (this.pollInterval) clearInterval(this.pollInterval);
             },
             methods: {
                 async updateAll() {
                     try {
                         const res = await fetch('/api/state');
                         if (res.ok) this.state = await res.json();
-                    } catch (e) { }
+                    } catch (e) { console.error('Erreur état:', e); }
                     try {
                         const res = await fetch('/camera/last_gesture');
                         if (res.ok) {
                             const data = await res.json();
-                            if (data.gesture) this.gesture = data.gesture;
+                            const newGesture = data.gesture || '';
+                            this.gesture = newGesture;
+
+                            // Si nouveau geste détecté, l'envoyer au LLM
+                            if (newGesture && newGesture !== this.lastProcessedGesture) {
+                                this.lastProcessedGesture = newGesture;
+                                this.processGesture(newGesture);
+                            }
                         }
-                    } catch (e) { }
+                    } catch (e) { console.error('Erreur geste:', e); }
+                },
+                async processGesture(gesture) {
+                    try {
+                        console.log(`[AUTO] Envoi geste au LLM: ${gesture}`);
+                        const res = await fetch('/api/gesture', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ gesture: gesture })
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            const time = new Date().toLocaleTimeString('fr-FR');
+                            if (data.status === 'success') {
+                                this.logs.unshift({ msg: `${gesture} → ${data.tool} ${data.action}`, time });
+                            } else if (data.status === 'skipped') {
+                                this.logs.unshift({ msg: `${gesture} → ${data.message}`, time });
+                            } else {
+                                this.logs.unshift({ msg: `${gesture} → ${data.message || 'Erreur'}`, time });
+                            }
+                            if (this.logs.length > 50) this.logs.pop();
+                            this.state = data.state || this.state;
+                        }
+                    } catch (e) { console.error('Erreur traitement geste:', e); }
                 },
                 async send() {
                     if (!this.input.trim()) return;
@@ -257,10 +292,11 @@
                             const data = await res.json();
                             const time = new Date().toLocaleTimeString('fr-FR');
                             this.logs.unshift({ msg: `${this.input} → ${data.tool}`, time });
+                            if (this.logs.length > 50) this.logs.pop();
                             this.input = '';
                             setTimeout(() => this.updateAll(), 500);
                         }
-                    } catch (e) { }
+                    } catch (e) { console.error('Erreur envoi:', e); }
                 }
             }
         }).mount('#app');

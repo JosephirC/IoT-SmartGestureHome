@@ -18,8 +18,6 @@ STATE: Dict = {
 
 ACTION_LOG = []
 
-# Websocket connections
-
 
 class ConnectionManager:
     def __init__(self):
@@ -30,11 +28,18 @@ class ConnectionManager:
         self.active_connections.append(websocket)
 
     async def disconnect(self, websocket: WebSocket):
+        # Retire best-effort
         if websocket in self.active_connections:
             try:
                 self.active_connections.remove(websocket)
             except Exception:
-                print("Erreur lors de la déconnexion websocket")
+                pass
+
+        # Ferme best-effort (même si déjà fermé / déjà retiré)
+        try:
+            await websocket.close()
+        except Exception:
+            pass
 
     async def broadcast(self, message: dict):
         dead = []
@@ -44,7 +49,7 @@ class ConnectionManager:
             except Exception:
                 dead.append(connection)
 
-        # nettoyer après
+        # Nettoyage après coup
         for ws in dead:
             await self.disconnect(ws)
 
@@ -61,59 +66,79 @@ async def get_state() -> StateResponse:
 @router.post("/gesture")
 async def process_gesture(input: GestureDetected):
     """Traite un geste détecté"""
-    gesture_text = input.gesture
+    try:
+        gesture_text = input.gesture
+        print("[API] reçu gesture:", gesture_text)
 
-    # Traduit le geste en commande
-    tool, args = await translate_gesture(gesture_text)
+        # Traduit le geste en commande
+        tool, args = await translate_gesture(gesture_text)
+        print("[API] LLM ->", tool, args)
 
-    if tool is None:
-        return {"status": "error", "message": "Geste non reconnu"}
+        if tool is None:
+            return {"status": "error", "message": "Geste non reconnu"}
 
-    # Vérifie les redondances
-    if tool == "control_leds" and STATE["leds"] == args["action"]:
-        return {"status": "skipped", "message": f"LEDs déjà {args['action']}"}
-    if tool == "control_fans" and STATE["fans"] == args["action"]:
-        return {"status": "skipped", "message": f"Fans déjà {args['action']}"}
-    if tool == "control_door" and STATE["door"] == args["action"]:
-        return {"status": "skipped", "message": f"Door déjà {args['action']}"}
+        # IMPORTANT: valider args AVANT d'accéder à args["action"]
+        if not isinstance(args, dict) or "action" not in args:
+            return {
+                "status": "error",
+                "message": "Réponse LLM invalide (args.action manquant)",
+                "tool": tool,
+                "args": args
+            }
 
-    # Exécute via MCP
-    result = await execute_mcp_tool(tool, args)
+        action = args["action"]
 
-    # Met à jour l'état
-    if tool == "control_leds":
-        STATE["leds"] = args["action"]
-    elif tool == "control_fans":
-        STATE["fans"] = args["action"]
-    elif tool == "control_door":
-        STATE["door"] = args["action"]
+        # Vérifie les redondances
+        if tool == "control_leds" and STATE["leds"] == action:
+            return {"status": "skipped", "message": f"LEDs déjà {action}"}
+        if tool == "control_fans" and STATE["fans"] == action:
+            return {"status": "skipped", "message": f"Fans déjà {action}"}
+        if tool == "control_door" and STATE["door"] == action:
+            return {"status": "skipped", "message": f"Door déjà {action}"}
 
-    # Log l'action
-    log_entry = {
-        "timestamp": datetime.now().isoformat(),
-        "gesture": gesture_text,
-        "tool": tool,
-        "action": args.get("action"),
-        "result": result.get("message", "OK")
-    }
-    ACTION_LOG.append(log_entry)
+        # Exécute via MCP
+        result = await execute_mcp_tool(tool, args)
+        print("[API] MCP ->", result)
 
-    # Broadcast
-    await manager.broadcast({
-        "type": "action_executed",
-        "gesture": gesture_text,
-        "tool": tool,
-        "action": args.get("action"),
-        "state": STATE,
-        "log_entry": log_entry
-    })
+        # Met à jour l'état
+        if tool == "control_leds":
+            STATE["leds"] = action
+        elif tool == "control_fans":
+            STATE["fans"] = action
+        elif tool == "control_door":
+            STATE["door"] = action
 
-    return {
-        "status": "success",
-        "tool": tool,
-        "action": args.get("action"),
-        "state": STATE
-    }
+        # Log l'action
+        log_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "gesture": gesture_text,
+            "tool": tool,
+            "action": action,
+            "result": result.get("message", "OK") if isinstance(result, dict) else str(result),
+        }
+        ACTION_LOG.append(log_entry)
+
+        # Broadcast
+        await manager.broadcast({
+            "type": "action_executed",
+            "gesture": gesture_text,
+            "tool": tool,
+            "action": action,
+            "state": STATE,
+            "log_entry": log_entry
+        })
+
+        return {
+            "status": "success",
+            "tool": tool,
+            "action": action,
+            "state": STATE
+        }
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "message": str(e)}
 
 
 @router.websocket("/ws")
@@ -123,15 +148,22 @@ async def websocket_endpoint(websocket: WebSocket):
 
     try:
         # Envoie l'état initial
-        await websocket.send_json({
-            "type": "initial_state",
-            "state": STATE,
-            "action_log": ACTION_LOG[-20:]
-        })
+        try:
+            await websocket.send_json({
+                "type": "initial_state",
+                "state": STATE,
+                "action_log": ACTION_LOG[-20:]
+            })
+        except Exception:
+            # client a déjà fermé (souvent lors d'un F5)
+            await manager.disconnect(websocket)
+            return
 
         while True:
-            data = await websocket.receive_text()
+            _ = await websocket.receive_text()
             # À développer si besoin
 
     except WebSocketDisconnect:
+        await manager.disconnect(websocket)
+    except Exception:
         await manager.disconnect(websocket)

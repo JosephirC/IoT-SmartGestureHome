@@ -33,9 +33,9 @@ Webcam → MediaPipe → Modèle TFLite → FastAPI → Ollama LLM → Serveur M
 | ---------- | ----------------------- |
 | `HELLO`    | Ouvrir la porte         |
 | `CUT`      | Fermer la porte         |
-| `OUI`      | Allumer les lumières    |
-| `NON`      | Éteindre les lumières   |
-| `BRAS`     | Allumer le ventilateur  |
+| `YES`      | Allumer les lumières    |
+| `NO`       | Éteindre les lumières   |
+| `ARM`      | Allumer le ventilateur  |
 | `SCISSORS` | Éteindre le ventilateur |
 
 ## Prérequis

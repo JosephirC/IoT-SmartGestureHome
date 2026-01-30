@@ -25,7 +25,7 @@ THRESH_HOLD = 0.5
 mp_holistic = mp_solutions.holistic
 
 # Filtrer uniquement les 6 gestes attendus (en lower car p2s_map renvoie souvent en lower)
-# ALLOWED_GESTURES = {"yes", "no", "arm", "hello", "cut", "animal"}
+# ALLOWED_GESTURES = {"yes", "no", "arm", "hello", "cut", "scissors"}
 
 
 try:

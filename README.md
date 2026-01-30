@@ -6,7 +6,7 @@ Système domotique intelligent avec contrôle par gestes utilisant la reconnaiss
 
 ## Démo
 
-> Vidéo de démonstration à venir dans `assets/demo.mp4`
+> Vidéo de démonstration dans `assets/demo.mp4`
 
 ## Aperçu
 
@@ -20,23 +20,23 @@ Webcam → MediaPipe → Modèle TFLite → FastAPI → Ollama LLM → Serveur M
 
 ### Composants
 
-| Composant | Description |
-|-----------|-------------|
-| **Backend** (`/backend/`) | Application FastAPI avec détection de gestes, intégration LLM et contrôle des appareils |
-| **Modèle Langue des Signes** (`/sign-language-modele/`) | Modèle MediaPipe + TFLite pour la reconnaissance de gestes |
-| **Serveur MCP** (`/mcp_server/`) | Serveur Model Context Protocol pour la communication Arduino |
-| **FastAPI Dashboard** (`/fastapi_dashboard/`) | Dashboard legacy pour le contrôle manuel |
+| Composant                                               | Description                                                                             |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| **Backend** (`/backend/`)                               | Application FastAPI avec détection de gestes, intégration LLM et contrôle des appareils |
+| **Modèle Langue des Signes** (`/sign-language-modele/`) | Modèle MediaPipe + TFLite pour la reconnaissance de gestes                              |
+| **Serveur MCP** (`/mcp_server/`)                        | Serveur Model Context Protocol pour la communication Arduino                            |
+| **FastAPI Dashboard** (`/fastapi_dashboard/`)           | Dashboard legacy pour le contrôle manuel                                                |
 
 ## Gestes Supportés
 
-| Geste | Action |
-|-------|--------|
-| `HELLO` | Ouvrir la porte |
-| `CUT` | Fermer la porte |
-| `OUI` | Allumer les lumières |
-| `NON` | Éteindre les lumières |
-| `BRAS` | Allumer le ventilateur |
-| `ANIMAL` | Éteindre le ventilateur |
+| Geste      | Action                  |
+| ---------- | ----------------------- |
+| `HELLO`    | Ouvrir la porte         |
+| `CUT`      | Fermer la porte         |
+| `OUI`      | Allumer les lumières    |
+| `NON`      | Éteindre les lumières   |
+| `BRAS`     | Allumer le ventilateur  |
+| `SCISSORS` | Éteindre le ventilateur |
 
 ## Prérequis
 
@@ -114,14 +114,14 @@ fastmcp run mcp_server/server.py:mcp
 
 ### Backend FastAPI (port 8000)
 
-| Endpoint | Méthode | Description |
-|----------|---------|-------------|
-| `/` | GET | Dashboard Vue.js |
-| `/camera/video_feed` | GET | Flux vidéo MJPEG |
-| `/camera/last_gesture` | GET | Dernier geste détecté |
-| `/api/state` | GET | États actuels des appareils |
-| `/api/gesture` | POST | Envoyer une commande de geste (appelle Ollama + MCP en interne) |
-| `/health` | GET | Vérification de santé |
+| Endpoint               | Méthode | Description                                                     |
+| ---------------------- | ------- | --------------------------------------------------------------- |
+| `/`                    | GET     | Dashboard Vue.js                                                |
+| `/camera/video_feed`   | GET     | Flux vidéo MJPEG                                                |
+| `/camera/last_gesture` | GET     | Dernier geste détecté                                           |
+| `/api/state`           | GET     | États actuels des appareils                                     |
+| `/api/gesture`         | POST    | Envoyer une commande de geste (appelle Ollama + MCP en interne) |
+| `/health`              | GET     | Vérification de santé                                           |
 
 ### Services internes (non exposés sur Swagger)
 
@@ -169,8 +169,8 @@ L'Arduino répond avec `ACK:<ACTION>` en cas de succès.
 ```
 IoT-SmartGestureHome/
 ├── assets/
-│   ├── image.png            # Image de présentation
-│   └── demo.mp4             # Vidéo de démonstration (à ajouter)
+│   ├── image.png            # Diagramme d'architecture
+│   └── demo.mp4             # Vidéo de démonstration
 ├── backend/
 │   ├── backend_main.py      # Point d'entrée FastAPI
 │   ├── config.py            # Configuration
@@ -191,13 +191,16 @@ IoT-SmartGestureHome/
 ├── mcp_server/
 │   ├── server.py            # Serveur FastMCP
 │   └── arduino_utils.py     # Connexion série
-├── fastapi_dashboard/
+├── fastapi_dashboard/       # Dashboard simple pour contrôler directement l'Arduino à partir de FastAPI
 │   ├── arduino/
 │   │   └── smart_home.ino   # Firmware Arduino
-│   └── main.py              # Dashboard legacy
-└── requirements.txt
+│   └── main.py              # Point d'entrée FastAPI
+└── requirements.txt         # Dépendances Python
 ```
 
-## Licence
+## Auteur
 
-MIT
+- ABIDA Youssef
+- BLETON PASCAL Artus
+- CORROLLER Nathan
+- ANDRIANASOLO LALA Sitrakaharinetsa Kevin

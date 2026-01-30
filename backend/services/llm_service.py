@@ -18,7 +18,7 @@ Allowed gesture labels (case-insensitive):
 - ARM
 - HELLO
 - CUT
-- ANIMAL
+- SCISSORS
 
 Map gestures to actions EXACTLY as follows:
 - HELLO  -> control_door OPEN
@@ -26,7 +26,7 @@ Map gestures to actions EXACTLY as follows:
 - YES    -> control_leds ON
 - NO    -> control_leds OFF
 - ARM   -> control_fans ON
-- ANIMAL -> control_fans OFF
+- SCISSORS -> control_fans OFF
 
 Rules:
 - Output ONLY ONE LINE.
